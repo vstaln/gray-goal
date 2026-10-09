@@ -1,0 +1,27 @@
+[package]
+name = "gray-goal"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Persistent goals with an independent completion auditor for the gray agent harness (wire v1.1)"
+
+[lib]
+name = "gray_goal"
+path = "src/lib.rs"
+
+[[bin]]
+name = "gray-goal"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+strip = true
