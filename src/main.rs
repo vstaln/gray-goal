@@ -15,7 +15,7 @@ use std::io::{BufRead, IsTerminal, Write};
 use std::path::{Path, PathBuf};
 
 use gray_goal::cli;
-use gray_goal::{PLUGIN_NAME, Store};
+use gray_goal::{Store, PLUGIN_NAME};
 
 fn session_cwd(params: &serde_json::Value) -> PathBuf {
     params["session"]["cwd"]

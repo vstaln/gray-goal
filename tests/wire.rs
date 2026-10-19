@@ -94,7 +94,11 @@ fn manifest_shape() {
     assert_eq!(r["sidecar_args"], serde_json::json!(["sidecar"]));
     assert_eq!(r["commands"], serde_json::json!(["/goal"]));
     assert_eq!(r["tools"][0]["name"], "goal");
-    assert!(r["hooks"].as_array().unwrap().iter().any(|h| h == "prompt/context"));
+    assert!(r["hooks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|h| h == "prompt/context"));
 }
 
 #[test]
@@ -102,11 +106,17 @@ fn lifecycle_create_plan_nudge() {
     let mut h = Harness::spawn();
     // bare /goal → status, no goal yet
     let r = h.command(1, &[]);
-    assert!(r["result"]["text"].as_str().unwrap().contains("no active goal"));
+    assert!(r["result"]["text"]
+        .as_str()
+        .unwrap()
+        .contains("no active goal"));
     // /goal <desc> → created; reply carries the planning prompt
     let r = h.command(2, &["add", "csv", "export"]);
     assert!(r["result"]["text"].as_str().unwrap().contains("created"));
-    assert!(r["result"]["prompt"].as_str().unwrap().contains("set_items"));
+    assert!(r["result"]["prompt"]
+        .as_str()
+        .unwrap()
+        .contains("set_items"));
     // agent drafts the checklist via the tool
     let r = h.tool(
         3,
@@ -116,14 +126,29 @@ fn lifecycle_create_plan_nudge() {
     // claiming done with open items is refused + lists them
     let r = h.tool(4, serde_json::json!({"action": "complete"}));
     assert_eq!(r["result"]["is_error"], true);
-    assert!(r["result"]["content"].as_str().unwrap().contains("2 item(s) still open"));
+    assert!(r["result"]["content"]
+        .as_str()
+        .unwrap()
+        .contains("2 item(s) still open"));
     // the refused claim arms the agent/before_start nudge — fires once
-    let n = h.request(5, "agent/before_start", serde_json::json!({"session": {"id": "t", "cwd": "/tmp"}}));
+    let n = h.request(
+        5,
+        "agent/before_start",
+        serde_json::json!({"session": {"id": "t", "cwd": "/tmp"}}),
+    );
     assert!(n["result"]["text"].as_str().unwrap().contains("still open"));
-    let n = h.request(6, "agent/before_start", serde_json::json!({"session": {"id": "t", "cwd": "/tmp"}}));
+    let n = h.request(
+        6,
+        "agent/before_start",
+        serde_json::json!({"session": {"id": "t", "cwd": "/tmp"}}),
+    );
     assert!(n["result"]["text"].is_null());
     // prompt/context injects the next unchecked item
-    let c = h.request(7, "prompt/context", serde_json::json!({"cwd": "/tmp", "session": {"id": "t", "cwd": "/tmp"}}));
+    let c = h.request(
+        7,
+        "prompt/context",
+        serde_json::json!({"cwd": "/tmp", "session": {"id": "t", "cwd": "/tmp"}}),
+    );
     let text = c["result"]["text"].as_str().unwrap();
     assert!(text.contains("0/2 items done"));
     assert!(text.contains("Next: #1 a"));
@@ -132,7 +157,10 @@ fn lifecycle_create_plan_nudge() {
     h.tool(9, serde_json::json!({"action": "check_item", "n": 2}));
     let r = h.tool(10, serde_json::json!({"action": "complete"}));
     assert_ne!(r["result"]["is_error"], true);
-    assert!(r["result"]["content"].as_str().unwrap().contains("marked complete"));
+    assert!(r["result"]["content"]
+        .as_str()
+        .unwrap()
+        .contains("marked complete"));
     // graceful shutdown
     h.send(&serde_json::json!({"method": "event/notify", "params": {"type": "turn_end"}}));
     h.send(&serde_json::json!({"method": "plugin/shutdown"}));
@@ -152,14 +180,27 @@ fn done_and_drop_by_user() {
     h.command(1, &["new", "ship", "it"]);
     // /goal done 1 on an empty checklist errors
     let r = h.command(2, &["done", "9"]);
-    assert!(r["result"]["text"].as_str().unwrap().contains("out of range"));
+    assert!(r["result"]["text"]
+        .as_str()
+        .unwrap()
+        .contains("out of range"));
     // /goal done marks the whole goal even with open items (user authority)
-    h.tool(3, serde_json::json!({"action": "set_items", "items": ["a", "b"]}));
+    h.tool(
+        3,
+        serde_json::json!({"action": "set_items", "items": ["a", "b"]}),
+    );
     let r = h.command(4, &["done"]);
     assert!(r["result"]["text"].as_str().unwrap().contains("still open"));
     // dropped goals leave the active pool
     let r = h.command(5, &["drop"]);
     assert!(r["result"]["text"].as_str().unwrap().contains("dropped"));
-    let c = h.request(6, "prompt/context", serde_json::json!({"cwd": "/tmp", "session": {"id": "t", "cwd": "/tmp"}}));
-    assert!(!c["result"]["text"].as_str().unwrap().contains("Active goal"));
+    let c = h.request(
+        6,
+        "prompt/context",
+        serde_json::json!({"cwd": "/tmp", "session": {"id": "t", "cwd": "/tmp"}}),
+    );
+    assert!(!c["result"]["text"]
+        .as_str()
+        .unwrap()
+        .contains("Active goal"));
 }
