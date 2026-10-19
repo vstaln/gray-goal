@@ -1,6 +1,6 @@
 //! The independent completion auditor: `/goal audit` spawns a detached
 //! `gray-goal audit-run` child so a `command/run` reply never waits on the
-//! check. `audit-run` invokes the auditor — `GRAY_GOAL_AUDITOR` (a `sh -c`
+//! check. `audit-run` invokes the auditor — `GRAY_GOAL_AUDITOR` (a `sh -c`/`cmd /C`
 //! command, test seam) or `gray --bare -p` (default: a fresh agent with
 //! blocking bash, no plugins — the grader is not the executor) — captures
 //! its output, parses the `VERDICT: PASS|FAIL` line, and writes the result
@@ -11,9 +11,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-use anyhow::{Context, bail};
+use anyhow::{bail, Context};
 
-use crate::{Audit, Goal, Status, Store, now_iso};
+use crate::{now_iso, Audit, Goal, Status, Store};
 
 /// Kill the auditor after this; a wedged child must not pin the verdict.
 pub const AUDIT_TIMEOUT: Duration = Duration::from_secs(600);
@@ -198,13 +198,29 @@ pub fn audit_run(home: &Path, id: &str, cwd: &Path) -> anyhow::Result<String> {
     ))
 }
 
+/// Platform shell for the `GRAY_GOAL_AUDITOR` spec: `sh -c` on unix,
+/// `cmd /C` on windows.
+#[cfg(windows)]
+fn shell_command(spec: &str) -> Command {
+    let mut c = Command::new("cmd");
+    c.args(["/C", spec]);
+    c
+}
+
+/// Platform shell for the `GRAY_GOAL_AUDITOR` spec: `sh -c` on unix,
+/// `cmd /C` on windows.
+#[cfg(not(windows))]
+fn shell_command(spec: &str) -> Command {
+    let mut c = Command::new("sh");
+    c.args(["-c", spec]);
+    c
+}
+
 /// The auditor invocation. `GRAY_GOAL_AUDITOR` wins (tests, custom runners);
 /// otherwise a bare `gray -p` — no plugins, so the plugin can't grade itself.
 fn auditor_command(prompt: &str) -> Command {
     if let Ok(spec) = std::env::var("GRAY_GOAL_AUDITOR") {
-        let mut c = Command::new("sh");
-        c.args(["-c", &spec]);
-        return c;
+        return shell_command(&spec);
     }
     let gray = std::env::var("GRAY_BIN").unwrap_or_else(|_| "gray".to_string());
     let mut c = Command::new(gray);
@@ -230,8 +246,7 @@ pub fn kickoff(store: &Store, goal: &Goal, cwd: &Path) -> anyhow::Result<String>
     let exe = std::env::current_exe().context("current_exe")?;
     let log = goals_log(store, &g.id);
     let out = std::fs::File::create(&log).unwrap_or_else(|_| {
-        std::fs::File::create(std::env::temp_dir().join("gray-goal-audit.log"))
-            .expect("audit log")
+        std::fs::File::create(std::env::temp_dir().join("gray-goal-audit.log")).expect("audit log")
     });
     let err = out.try_clone().context("clone log fd")?;
     Command::new(exe)

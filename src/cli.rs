@@ -6,7 +6,7 @@
 use clap::{Args, Parser, Subcommand};
 use std::path::Path;
 
-use anyhow::{Context, bail, ensure};
+use anyhow::{bail, ensure, Context};
 
 use crate::audit;
 use crate::{Audit, Status, Store};
@@ -20,7 +20,15 @@ pub struct GoalArgs {
 /// Words that start a real subcommand; anything else after `/goal` is the
 /// objective shorthand (`/goal add CSV export` → `new "add CSV export"`).
 pub const VERBS: &[&str] = &[
-    "new", "list", "show", "done", "check", "drop", "audit", "audit-run", "help",
+    "new",
+    "list",
+    "show",
+    "done",
+    "check",
+    "drop",
+    "audit",
+    "audit-run",
+    "help",
 ];
 
 /// Route argv to a parse: bare → status; verb-first → clap; else the
@@ -62,7 +70,11 @@ pub enum GoalCommand {
     Audit { id: Option<String> },
     /// `audit-run` — internal: the detached audit child
     #[command(hide = true)]
-    AuditRun { id: String, #[arg(long)] cwd: Option<String> },
+    AuditRun {
+        id: String,
+        #[arg(long)]
+        cwd: Option<String>,
+    },
 }
 
 /// What the wire returns: `text` renders inline; `prompt` becomes a session
@@ -279,7 +291,12 @@ fn kickoff(store: &Store, id: Option<&str>, cwd: &Path) -> anyhow::Result<Reply>
     let sel = id.unwrap_or("");
     let goal = store
         .resolve(sel)
-        .or_else(|| store.list().into_iter().find(|g| g.status != Status::Dropped))
+        .or_else(|| {
+            store
+                .list()
+                .into_iter()
+                .find(|g| g.status != Status::Dropped)
+        })
         .context("no goal to audit")?;
     Ok(Reply::text(audit::kickoff(store, &goal, cwd)?))
 }
