@@ -507,6 +507,7 @@ pub fn manifest() -> serde_json::Value {
         "sidecar_args": ["sidecar"],
         "tools": [tool_definition()],
         "commands": COMMANDS,
+        "command_descriptions": {"/goal": "track a goal checklist and claim it done"},
         "hooks": ["prompt/context", "agent/before_start"],
         "completion": COMPLETION,
     })
