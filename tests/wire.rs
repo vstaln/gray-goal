@@ -160,7 +160,7 @@ fn lifecycle_create_plan_nudge() {
     assert!(r["result"]["content"]
         .as_str()
         .unwrap()
-        .contains("marked complete"));
+        .contains("waiting for /goal audit"));
     // graceful shutdown
     h.send(&serde_json::json!({"method": "event/notify", "params": {"type": "turn_end"}}));
     h.send(&serde_json::json!({"method": "plugin/shutdown"}));
