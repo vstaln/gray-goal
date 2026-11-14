@@ -476,7 +476,7 @@ pub fn tool_definition() -> serde_json::Value {
     serde_json::json!({
         "name": TOOL_NAME,
         "label": "Goal",
-        "preview": "\\n{}",
+        "preview": "\u{b7} {action|verb}",
         "description": "Read and update the persistent goal's ordered checklist, and claim completion. \
             Actions: `status` (active goal summary), `set_items` (replace the whole checklist — pass `items`), \
             `add_item` (append — pass `item`), `check_item` / `uncheck_item` (toggle — pass `n`, the 1-based item number), \
