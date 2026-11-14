@@ -24,8 +24,15 @@ pub const COMMANDS: &[&str] = &["/goal"];
 /// Tool name the model calls to record progress and claim completion.
 pub const TOOL_NAME: &str = "goal";
 /// Host completer vocabulary for `/goal <tab>` and `gray goal <tab>`.
-pub const COMPLETION: &[&str] = &[
-    "new", "list", "show", "done", "check", "drop", "audit", "help",
+pub const COMPLETION: &[(&str, &str)] = &[
+    ("new", "start a goal and plan its checklist"),
+    ("list", "list every goal"),
+    ("show", "show one goal doc, default the active goal"),
+    ("done", "mark a goal done, or check item n"),
+    ("check", "check item n explicitly"),
+    ("drop", "drop a goal, keeping it on disk"),
+    ("audit", "run the independent completion auditor"),
+    ("help", "usage and verbs"),
 ];
 
 /// `~/.gray`, overridable with `GRAY_HOME` (same rule as the host).
@@ -509,7 +516,11 @@ pub fn manifest() -> serde_json::Value {
         "commands": COMMANDS,
         "command_descriptions": {"/goal": "track a goal checklist and claim it done"},
         "hooks": ["prompt/context", "agent/before_start"],
-        "completion": COMPLETION,
+        "description": "persistent goal checklists that survive sessions",
+        "completion": COMPLETION
+            .iter()
+            .map(|(arg, description)| serde_json::json!({"arg": arg, "description": description}))
+            .collect::<Vec<_>>(),
     })
 }
 
