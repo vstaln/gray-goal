@@ -109,7 +109,16 @@ fn sidecar_loop() -> anyhow::Result<()> {
             },
             "command/run" => command_run(&home, &params),
             "tool/call" => tool_call(&home, &params),
-            _ => continue, // unknown methods/lines are ignored
+            other => {
+                let reply = serde_json::json!({
+                    "id": id,
+                    "error": { "code": -32601, "message": format!("method not found: {other}") }
+                });
+                let mut o = stdout.lock();
+                writeln!(o, "{reply}")?;
+                o.flush()?;
+                continue;
+            }
         };
         let reply = serde_json::json!({ "id": id, "result": result });
         let mut o = stdout.lock();
